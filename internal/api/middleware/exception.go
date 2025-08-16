@@ -1,12 +1,11 @@
-package middleware
+package middlewares
 
 import (
-	"errors"
 	response "gin/internal/response"
+	"errors"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 // ErrorType represents different types of errors
@@ -108,21 +107,21 @@ func ErrorHandler() gin.HandlerFunc {
 				// Handle application errors
 				switch appErr.Type {
 				case ErrorTypeValidation:
-					response.SendErrorResponse(c, http.StatusUnprocessableEntity, appErr.Message)
+					response.SendError(c, appErr.Message, appErr.Description, http.StatusUnprocessableEntity, appErr.Data)
 				case ErrorTypeInternal:
-					response.SendErrorResponse(c, http.StatusInternalServerError, appErr.Message) // Changed from respHelper to responses
+					response.SendError(c, appErr.Message, appErr.Description, http.StatusInternalServerError) // Changed from respHelper to responses
 				case ErrorTypeNotFound:
-					response.SendErrorResponse(c, http.StatusNotFound, appErr.Message)
+					response.SendError(c, appErr.Message, appErr.Description, http.StatusNotFound)
 				case ErrorTypeUnauthorized:
-					response.SendErrorResponse(c, http.StatusUnauthorized, appErr.Message)
+					response.SendError(c, appErr.Message, appErr.Description, http.StatusUnauthorized)
 				case ErrorTypeForbidden:
-					response.SendErrorResponse(c, http.StatusForbidden, appErr.Message)
+					response.SendError(c, appErr.Message, appErr.Description, http.StatusForbidden)
 				default:
-					response.SendErrorResponse(c, http.StatusInternalServerError, "An unexpected error occurred")
+					response.SendError(c, "An unexpected error occurred", err.Error(), http.StatusInternalServerError)
 				}
 			} else {
 				// Handle generic errors
-				response.SendErrorResponse(c, http.StatusInternalServerError, "An unexpected error occurred")
+				response.SendError(c, "An unexpected error occurred", err.Error(), http.StatusInternalServerError)
 			}
 		}
 	}

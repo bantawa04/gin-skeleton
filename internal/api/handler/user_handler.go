@@ -63,8 +63,10 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 // CreateUser handles POST /users request
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var request request.UserCreateRequest
+
 	if err := c.ShouldBindJSON(&request); err != nil {
-		appErr := middleware.NewValidationError("Invalid request format", err.Error())
+		validationErrors := h.validator.GenerateValidationErrors(err)
+		appErr := middleware.NewValidationError("Validation failed", "Request validation failed", validationErrors)
 		_ = c.Error(appErr)
 		return
 	}

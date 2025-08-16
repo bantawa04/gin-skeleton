@@ -3,7 +3,7 @@ package router
 import (
 	"fmt"
 	handlers "gin/internal/api/handler"
-	"gin/internal/api/middleware"
+	middleware "gin/internal/api/middleware"
 	"time"
 
 	"github.com/gin-gonic/gin"
