@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	exceptions "gin/internal/api/exception"
-	"gin/internal/models"
 	request "gin/internal/request"
 	response "gin/internal/response"
 	"gin/internal/service/user"
@@ -49,7 +48,6 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 
 	user, err := h.userService.GetUserByID(c.Request.Context(), id)
 	if err != nil {
-		// Add error to context so middleware can handle it
 		_ = c.Error(err)
 		return
 	}
@@ -68,7 +66,6 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Validate the request
 	if err := h.validator.Struct(request); err != nil {
 		validationErrors := h.validator.GenerateValidationErrors(err)
 
@@ -90,23 +87,31 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // UpdateUser handles PUT /users/:id request
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
+	var request request.UserUpdateRequest
+
 	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
+		appErr := exceptions.ValidationError("User ID is required", nil, nil)
+		_ = c.Error(appErr)
 		return
 	}
 
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+	if err := c.ShouldBindJSON(&request); err != nil {
+		errMsg := err.Error()
+		appErr := exceptions.ValidationError("Invalid request format", &errMsg)
+		_ = c.Error(appErr)
 		return
 	}
 
-	// Set the ID from URL parameter
-	user.ID = id
+	if err := h.validator.Struct(request); err != nil {
+		validationErrors := h.validator.GenerateValidationErrors(err)
 
-	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), &user)
+		appErr := exceptions.ValidationError("Validation failed", nil, validationErrors)
+		_ = c.Error(appErr)
+		return
+	}
+
+	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), request, id)
 	if err != nil {
-		// Add error to context so middleware can handle it
 		_ = c.Error(err)
 		return
 	}
@@ -117,14 +122,14 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // DeleteUser handles DELETE /users/:id request
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
+
 	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
+		appErr := exceptions.ValidationError("User ID is required", nil, nil)
+		_ = c.Error(appErr)
 		return
 	}
-
 	err := h.userService.DeleteUser(c.Request.Context(), id)
 	if err != nil {
-		// Add error to context so middleware can handle it
 		_ = c.Error(err)
 		return
 	}

@@ -65,7 +65,7 @@ func NewRouter(
 			users.GET("", userHandler.GetAllUsers)
 			users.GET("/:id", userHandler.GetUserByID)
 			users.POST("", userHandler.CreateUser)
-			users.PUT("/:id", userHandler.UpdateUser)
+			users.PATCH("/:id", userHandler.UpdateUser)
 			users.DELETE("/:id", userHandler.DeleteUser)
 		}
 

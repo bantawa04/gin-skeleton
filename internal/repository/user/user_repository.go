@@ -38,6 +38,11 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }
 
+// UpdateFields updates specific fields of a user
+func (r *UserRepository) UpdateFields(ctx context.Context, id string, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
+}
+
 // Delete deletes a user by ID
 func (r *UserRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&models.User{}).Error
@@ -47,19 +52,6 @@ func (r *UserRepository) Delete(ctx context.Context, id string) error {
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*models.User, error) {
 	var user models.User
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &user, nil
-}
-
-// FindByEmail finds a user by email
-func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil

@@ -7,6 +7,7 @@ import (
 	"gin/internal/models"
 	repository "gin/internal/repository/user"
 	"gin/internal/request"
+	"gin/internal/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -74,17 +75,12 @@ func (s *UserService) CreateUser(ctx context.Context, request request.UserCreate
 }
 
 // UpdateUser updates an existing user
-func (s *UserService) UpdateUser(ctx context.Context, user *models.User) (interface{}, error) {
-	if user == nil {
-		return nil, errors.New("user data is required")
-	}
-
-	if user.ID == "" {
+func (s *UserService) UpdateUser(ctx context.Context, request request.UserUpdateRequest, id string) (interface{}, error) {
+	if id == "" {
 		return nil, errors.New("user ID is required")
 	}
 
-	// Check if user exists
-	existingUser, err := s.userRepo.FindByID(ctx, user.ID)
+	existingUser, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -93,28 +89,35 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) (interf
 		return nil, exceptions.NotFoundError("User not found", nil, nil)
 	}
 
-	err = s.userRepo.Update(ctx, user)
+	updates, err := utils.MapStructToUpdates(request)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	err = s.userRepo.UpdateFields(ctx, id, updates)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedUser, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
 }
 
 // DeleteUser deletes a user by ID
 func (s *UserService) DeleteUser(ctx context.Context, id string) error {
-	if id == "" {
-		return errors.New("user ID is required")
-	}
 
-	// Check if user exists
 	existingUser, err := s.userRepo.FindByID(ctx, id)
+
 	if err != nil {
 		return err
 	}
 
 	if existingUser == nil {
-		return errors.New("user not found")
+		return exceptions.NotFoundError("User not found", nil, nil)
 	}
 
 	return s.userRepo.Delete(ctx, id)

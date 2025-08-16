@@ -12,6 +12,7 @@ type UserRepositoryInterface interface {
 	GetAll(ctx context.Context) ([]*models.User, error)
 	Create(ctx context.Context, request request.UserCreateRequest) error
 	Update(ctx context.Context, user *models.User) error
+	UpdateFields(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
 
 	// Find operations
