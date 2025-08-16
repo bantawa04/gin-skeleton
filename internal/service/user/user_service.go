@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	exceptions "gin/internal/api/exception"
 	"gin/internal/models"
 	repository "gin/internal/repository/user"
 	"gin/internal/request"
@@ -39,25 +40,7 @@ func (s *UserService) GetUserByID(ctx context.Context, id string) (*models.User,
 	}
 
 	if user == nil {
-		return nil, errors.New("user not found")
-	}
-
-	return user, nil
-}
-
-// GetUserByEmail retrieves a user by email
-func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	if email == "" {
-		return nil, errors.New("email is required")
-	}
-
-	user, err := s.userRepo.FindByEmail(ctx, email)
-	if err != nil {
-		return nil, err
-	}
-
-	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, exceptions.NotFoundError("User not found", nil, nil)
 	}
 
 	return user, nil
@@ -72,7 +55,7 @@ func (s *UserService) CreateUser(ctx context.Context, request request.UserCreate
 	}
 
 	if existingUser != nil {
-		return nil, errors.New("user with this email already exists")
+		return nil, exceptions.ValidationError("User already exists", nil, nil)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -107,7 +90,7 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) (interf
 	}
 
 	if existingUser == nil {
-		return nil, errors.New("user not found")
+		return nil, exceptions.NotFoundError("User not found", nil, nil)
 	}
 
 	err = s.userRepo.Update(ctx, user)

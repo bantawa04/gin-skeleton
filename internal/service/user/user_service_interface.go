@@ -11,7 +11,6 @@ type UserServiceInterface interface {
 	// User management
 	GetAllUsers(ctx context.Context) ([]*models.User, error)
 	GetUserByID(ctx context.Context, id string) (*models.User, error)
-	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	CreateUser(ctx context.Context, request request.UserCreateRequest) (interface{}, error)
 	UpdateUser(ctx context.Context, user *models.User) (interface{}, error)
 	DeleteUser(ctx context.Context, id string) error

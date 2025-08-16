@@ -2,8 +2,8 @@ package router
 
 import (
 	"fmt"
+	exceptions "gin/internal/api/exception"
 	handlers "gin/internal/api/handler"
-	middleware "gin/internal/api/middleware"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,8 +24,8 @@ func NewRouter(
 	router := gin.Default()
 
 	// Add middleware
-	// router.Use(middlewares.CaseConverterMiddleware())
-	router.Use(middleware.ErrorHandler())
+	// router.Use(exceptions.CaseConverterMiddleware())
+	router.Use(exceptions.ErrorHandler())
 
 	// Add custom logger middleware
 	router.Use(func(c *gin.Context) {
@@ -49,7 +49,7 @@ func NewRouter(
 	// Handle 404 Not Found
 	router.NoRoute(func(c *gin.Context) {
 		// Add error to context instead of handling directly
-		// appErr := middlewares.NewNotFoundError("Route not found", "The requested endpoint does not exist")
+		// appErr := exceptions.NewNotFoundError("Route not found", "The requested endpoint does not exist")
 		// _ = c.Error(appErr)
 	})
 

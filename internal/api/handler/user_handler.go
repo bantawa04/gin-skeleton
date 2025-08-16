@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	middleware "gin/internal/api/middleware"
+	exceptions "gin/internal/api/exception"
 	"gin/internal/models"
 	request "gin/internal/request"
 	response "gin/internal/response"
@@ -31,7 +31,8 @@ func NewUserHandler(userService user.UserServiceInterface, validator *validators
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	users, err := h.userService.GetAllUsers(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Add error to context so middleware can handle it
+		_ = c.Error(err)
 		return
 	}
 
@@ -48,12 +49,8 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 
 	user, err := h.userService.GetUserByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		// Add error to context so middleware can handle it
+		_ = c.Error(err)
 		return
 	}
 
@@ -65,8 +62,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	var request request.UserCreateRequest
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		validationErrors := h.validator.GenerateValidationErrors(err)
-		appErr := middleware.NewValidationError("Validation failed", "Request validation failed", validationErrors)
+		errMsg := err.Error()
+		appErr := exceptions.ValidationError("Invalid request format", &errMsg)
 		_ = c.Error(appErr)
 		return
 	}
@@ -74,14 +71,16 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	// Validate the request
 	if err := h.validator.Struct(request); err != nil {
 		validationErrors := h.validator.GenerateValidationErrors(err)
-		appErr := middleware.NewValidationError("Validation failed", "Request validation failed", validationErrors)
+
+		appErr := exceptions.ValidationError("Validation failed", nil, validationErrors)
 		_ = c.Error(appErr)
 		return
 	}
 
 	createdUser, err := h.userService.CreateUser(c.Request.Context(), request)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Add error to context so middleware can handle it
+		_ = c.Error(err)
 		return
 	}
 
@@ -107,7 +106,8 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), &user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Add error to context so middleware can handle it
+		_ = c.Error(err)
 		return
 	}
 
@@ -124,7 +124,8 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 
 	err := h.userService.DeleteUser(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Add error to context so middleware can handle it
+		_ = c.Error(err)
 		return
 	}
 
