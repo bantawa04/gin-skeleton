@@ -10,6 +10,7 @@ import (
 type UserServiceInterface interface {
 	// User management
 	GetAllUsers(ctx context.Context) ([]*models.User, error)
+	GetAllUsersPaginated(ctx context.Context, page, perPage int) ([]*models.User, int64, error)
 	GetUserByID(ctx context.Context, id string) (*models.User, error)
 	CreateUser(ctx context.Context, request request.UserCreateRequest) (interface{}, error)
 	UpdateUser(ctx context.Context, request request.UserUpdateRequest, id string) (interface{}, error)

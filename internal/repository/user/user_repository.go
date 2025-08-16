@@ -24,6 +24,29 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]*models.User, error) {
 	return users, err
 }
 
+// GetAllPaginated retrieves users with pagination
+func (r *UserRepository) GetAllPaginated(ctx context.Context, page, perPage int) ([]*models.User, int64, error) {
+	var users []*models.User
+	var total int64
+
+	// Get total count
+	err := r.db.WithContext(ctx).Model(&models.User{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Calculate offset
+	offset := (page - 1) * perPage
+
+	// Get paginated users
+	err = r.db.WithContext(ctx).Offset(offset).Limit(perPage).Find(&users).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, err
+}
+
 // Create creates a new user
 func (r *UserRepository) Create(ctx context.Context, user *models.User) (*models.User, error) {
 	err := r.db.WithContext(ctx).Create(user).Error
@@ -52,6 +75,18 @@ func (r *UserRepository) Delete(ctx context.Context, id string) error {
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*models.User, error) {
 	var user models.User
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user models.User
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil

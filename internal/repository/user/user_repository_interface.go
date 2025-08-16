@@ -10,6 +10,7 @@ import (
 type UserRepositoryInterface interface {
 	// Basic CRUD operations
 	GetAll(ctx context.Context) ([]*models.User, error)
+	GetAllPaginated(ctx context.Context, page, perPage int) ([]*models.User, int64, error)
 	Create(ctx context.Context, request request.UserCreateRequest) error
 	Update(ctx context.Context, user *models.User) error
 	UpdateFields(ctx context.Context, id string, updates map[string]interface{}) error

@@ -29,6 +29,22 @@ func (s *UserService) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	return s.userRepo.GetAll(ctx)
 }
 
+// GetAllUsersPaginated retrieves users with pagination
+func (s *UserService) GetAllUsersPaginated(ctx context.Context, page, perPage int) ([]*models.User, int64, error) {
+	// Validate pagination parameters
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 10 // Default page size
+	}
+	if perPage > 100 {
+		perPage = 100 // Maximum page size
+	}
+
+	return s.userRepo.GetAllPaginated(ctx, page, perPage)
+}
+
 // GetUserByID retrieves a user by ID
 func (s *UserService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	if id == "" {

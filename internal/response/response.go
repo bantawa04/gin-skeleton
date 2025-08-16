@@ -3,7 +3,8 @@ package response
 import (
 	"net/http"
 
-	"gin/internal/validator"
+	validators "gin/internal/validator"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,32 +28,6 @@ type ErrorResponse struct {
 	Message     string      `json:"message"`
 	Description string      `json:"description,omitempty"`
 	Data        interface{} `json:"data,omitempty"`
-}
-
-// SendPaginatedResponse sends a paginated response
-func SendPaginatedResponse(c *gin.Context, data interface{}, message string) {
-
-	paginatedData, ok := data.(map[string]interface{})
-	if !ok {
-		// If not, fall back to regular response
-		SendResponse(c, data, message)
-		return
-	}
-
-	// Create response with pagination metadata
-	response := gin.H{
-		"success": true,
-		"message": message,
-		"data":    paginatedData["data"],
-		"meta": gin.H{
-			"page":       paginatedData["page"],
-			"totalPages": paginatedData["totalPages"],
-			"perPage":    paginatedData["perPage"],
-			"totalItems": paginatedData["totalItems"],
-		},
-	}
-
-	c.JSON(http.StatusOK, response)
 }
 
 // SendResponse sends a success response with data

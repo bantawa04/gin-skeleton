@@ -2,10 +2,13 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	exceptions "gin/internal/api/exception"
+	"gin/internal/models"
 	request "gin/internal/request"
 	response "gin/internal/response"
+	responseDTO "gin/internal/response"
 	"gin/internal/service/user"
 	validators "gin/internal/validator"
 
@@ -28,14 +31,30 @@ func NewUserHandler(userService user.UserServiceInterface, validator *validators
 
 // GetAllUsers handles GET /users request
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
-	users, err := h.userService.GetAllUsers(c.Request.Context())
+	// Get pagination parameters from query string
+	page := 1
+	perPage := 10
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if perPageStr := c.Query("per_page"); perPageStr != "" {
+		if pp, err := strconv.Atoi(perPageStr); err == nil && pp > 0 && pp <= 100 {
+			perPage = pp
+		}
+	}
+
+	users, total, err := h.userService.GetAllUsersPaginated(c.Request.Context(), page, perPage)
 	if err != nil {
-		// Add error to context so middleware can handle it
 		_ = c.Error(err)
 		return
 	}
 
-	response.SendResponse(c, users, "users retrieved successfully")
+	userResponses := responseDTO.ToPaginatedUserResponse(users, page, perPage, total)
+	response.SendResponse(c, userResponses, "users retrieved successfully")
 }
 
 // GetUserByID handles GET /users/:id request
@@ -52,7 +71,8 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	response.SendResponse(c, user, "user retrieved successfully")
+	userResponse := responseDTO.ToUserResponse(user)
+	response.SendResponse(c, userResponse, "user retrieved successfully")
 }
 
 // CreateUser handles POST /users request
@@ -76,12 +96,12 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 	createdUser, err := h.userService.CreateUser(c.Request.Context(), request)
 	if err != nil {
-		// Add error to context so middleware can handle it
 		_ = c.Error(err)
 		return
 	}
 
-	response.SendResponse(c, createdUser, "user created successfully")
+	userResponse := responseDTO.ToUserResponse(createdUser.(*models.User))
+	response.SendResponse(c, userResponse, "user created successfully")
 }
 
 // UpdateUser handles PUT /users/:id request
@@ -116,7 +136,8 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	response.SendResponse(c, updatedUser, "user updated successfully")
+	userResponse := responseDTO.ToUserResponse(updatedUser.(*models.User))
+	response.SendResponse(c, userResponse, "user updated successfully")
 }
 
 // DeleteUser handles DELETE /users/:id request
