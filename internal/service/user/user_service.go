@@ -6,6 +6,8 @@ import (
 	"gin/internal/models"
 	repository "gin/internal/repository/user"
 	"gin/internal/request"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService implements UserServiceInterface
@@ -73,11 +75,16 @@ func (s *UserService) CreateUser(ctx context.Context, request request.UserCreate
 		return nil, errors.New("user with this email already exists")
 	}
 
-	// Convert request to user model with only the fields provided
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
 	user := &models.User{
 		FirstName: &request.FirstName,
 		LastName:  &request.LastName,
 		Email:     request.Email,
+		Password:  string(hashedPassword),
 	}
 
 	return s.userRepo.Create(ctx, user)

@@ -15,6 +15,7 @@ type User struct {
 	FirstName        *string                  `json:"first_name,omitempty" gorm:"type:varchar(255)"`
 	LastName         *string                  `json:"last_name,omitempty" gorm:"type:varchar(255)"`
 	Email            string                   `json:"email" gorm:"type:varchar(255);uniqueIndex"`
+	Password         string                   `json:"-" gorm:"type:varchar(255)"`
 	Phone            *string                  `json:"phone,omitempty" gorm:"type:varchar(20)"`
 	Province         *string                  `json:"province,omitempty" gorm:"type:varchar(100)"`
 	District         *string                  `json:"district,omitempty" gorm:"type:varchar(100)"`
@@ -23,7 +24,7 @@ type User struct {
 	SocialProvider   *string                  `json:"social_provider,omitempty" gorm:"type:varchar(50)"`
 	SocialProviderID *string                  `json:"social_provider_id,omitempty" gorm:"type:varchar(100)"`
 	LastSignInAt     *time.Time               `json:"last_sign_in_at,omitempty"`
-	Status           constant.UserStatusEnum  `json:"status" gorm:"type:varchar(20);default:'active'"`	
+	Status           constant.UserStatusEnum  `json:"status" gorm:"type:varchar(20);default:'active'"`
 	CreatedAt        time.Time                `json:"created_at"`
 	UpdatedAt        time.Time                `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt           `json:"deleted_at,omitempty" gorm:"index"`

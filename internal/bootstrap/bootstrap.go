@@ -7,6 +7,7 @@ import (
 	userRepository "gin/internal/repository/user"
 	"gin/internal/router"
 	userService "gin/internal/service/user"
+	validators "gin/internal/validator"
 	"log"
 	"net/http"
 
@@ -20,6 +21,7 @@ var Module = fx.Options(
 	ConfigModule,
 	RepositoryModule,
 	ServiceModule,
+	ValidatorModule,
 	HandlerModule,
 	RouterModule,
 	fx.Invoke(bootstrap),
@@ -39,6 +41,11 @@ var RepositoryModule = fx.Options(
 // ServiceModule provides service dependencies
 var ServiceModule = fx.Options(
 	fx.Provide(userService.NewUserService),
+)
+
+// ValidatorModule provides validator dependencies
+var ValidatorModule = fx.Options(
+	fx.Provide(validators.NewValidator),
 )
 
 // HandlerModule provides handler dependencies
