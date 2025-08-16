@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      target: ${TARGET:-development}
+    container_name: mitho-app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - GIN_MODE=${GIN_MODE:-debug}
+    restart: unless-stopped
