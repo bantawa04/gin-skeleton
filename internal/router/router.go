@@ -4,19 +4,17 @@ import (
 	"fmt"
 	exceptions "gin/internal/api/exception"
 	handlers "gin/internal/api/handler"
+	middleware "gin/internal/middleware"
+	response "gin/internal/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Router interface defines methods for the router
 type Router interface {
 	Run(addr ...string) error
 }
 
-// NewRouter creates and configures a Gin router
-// Update the NewRouter function to include brand and category routes
-// NewRouter creates and configures a new router
 func NewRouter(
 
 	userHandler *handlers.UserHandler,
@@ -24,7 +22,7 @@ func NewRouter(
 	router := gin.Default()
 
 	// Add middleware
-	// router.Use(exceptions.CaseConverterMiddleware())
+	router.Use(middleware.CaseConverterMiddleware())
 	router.Use(exceptions.ErrorHandler())
 
 	// Add custom logger middleware
@@ -46,15 +44,16 @@ func NewRouter(
 		)
 	})
 
-	// Handle 404 Not Found
 	router.NoRoute(func(c *gin.Context) {
-		// Add error to context instead of handling directly
-		// appErr := exceptions.NewNotFoundError("Route not found", "The requested endpoint does not exist")
-		// _ = c.Error(appErr)
+		desc := "The requested endpoint does not exist"
+		appErr := exceptions.NotFoundError("Route not found", &desc)
+		_ = c.Error(appErr)
 	})
 
 	// Register routes
-	// router.GET("/ping", healthHandler.HealthCheck)
+	router.GET("/ping", func(c *gin.Context) {
+		response.SendResponse(c, "pong", "pong")
+	})
 
 	// API routes
 	api := router.Group("/api")
