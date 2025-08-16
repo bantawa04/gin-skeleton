@@ -21,6 +21,11 @@ type Config struct {
 	DBPassword string `mapstructure:"DB_PASSWORD"`
 	DBName     string `mapstructure:"DB_NAME"`
 	DBSSLMode  string `mapstructure:"DB_SSL_MODE"`
+
+	// JWT config
+	JWTSecretKey     string        `mapstructure:"JWT_SECRET_KEY"`
+	JWTAccessExpiry  time.Duration `mapstructure:"JWT_ACCESS_EXPIRY"`
+	JWTRefreshExpiry time.Duration `mapstructure:"JWT_REFRESH_EXPIRY"`
 }
 
 // ServerConfig returns the server configuration
@@ -44,6 +49,15 @@ func (c *Config) Database() DatabaseConfig {
 	}
 }
 
+// JWT returns the JWT configuration
+func (c *Config) JWT() JWTConfig {
+	return JWTConfig{
+		SecretKey:     c.JWTSecretKey,
+		AccessExpiry:  c.JWTAccessExpiry,
+		RefreshExpiry: c.JWTRefreshExpiry,
+	}
+}
+
 // ServerConfig holds server-related configuration
 type ServerConfig struct {
 	Port         string
@@ -59,6 +73,13 @@ type DatabaseConfig struct {
 	Password string
 	DBName   string
 	SSLMode  string
+}
+
+// JWTConfig holds JWT-related configuration
+type JWTConfig struct {
+	SecretKey     string
+	AccessExpiry  time.Duration
+	RefreshExpiry time.Duration
 }
 
 // LoadConfig loads configuration from environment variables and .env files
@@ -79,6 +100,11 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("DB_PASSWORD", "")
 	viper.SetDefault("DB_NAME", "beautyessentials")
 	viper.SetDefault("DB_SSL_MODE", "allow")
+
+	// JWT defaults
+	viper.SetDefault("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+	viper.SetDefault("JWT_ACCESS_EXPIRY", "168h")  // 7 days
+	viper.SetDefault("JWT_REFRESH_EXPIRY", "720h") // 30 days
 
 	// Enable environment variables
 	viper.AutomaticEnv()

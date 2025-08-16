@@ -5,6 +5,7 @@ go 1.25.0
 require go.uber.org/fx v1.24.0
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible // indirect
 	github.com/lestrrat-go/strftime v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

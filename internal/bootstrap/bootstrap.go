@@ -2,12 +2,13 @@ package bootstrap
 
 import (
 	"context"
-	userHandler "gin/internal/api/handler"
+	"gin/internal/api/handler"
 	"gin/internal/config"
 	"gin/internal/logger"
 	userRepository "gin/internal/repository/user"
 	"gin/internal/router"
 	userService "gin/internal/service/user"
+	"gin/internal/utils"
 	validators "gin/internal/validator"
 	"log"
 	"net/http"
@@ -23,6 +24,7 @@ var Module = fx.Options(
 	RepositoryModule,
 	ServiceModule,
 	ValidatorModule,
+	JWTModule,
 	HandlerModule,
 	RouterModule,
 	fx.Invoke(bootstrap),
@@ -51,7 +53,13 @@ var ValidatorModule = fx.Options(
 
 // HandlerModule provides handler dependencies
 var HandlerModule = fx.Options(
-	fx.Provide(userHandler.NewUserHandler),
+	fx.Provide(handler.NewUserHandler),
+	fx.Provide(handler.NewAuthHandler),
+)
+
+// JWTModule provides JWT manager dependencies
+var JWTModule = fx.Options(
+	fx.Provide(newJWTManager),
 )
 
 // RouterModule provides router dependencies
@@ -63,6 +71,16 @@ var RouterModule = fx.Options(
 // BuildApp constructs the fx application with all dependencies
 func BuildApp() *fx.App {
 	return fx.New(Module)
+}
+
+// newJWTManager creates a JWT manager with configuration
+func newJWTManager(cfg *config.Config) *utils.JWTManager {
+	jwtConfig := cfg.JWT()
+	return utils.NewJWTManagerFromConfig(
+		jwtConfig.SecretKey,
+		jwtConfig.AccessExpiry,
+		jwtConfig.RefreshExpiry,
+	)
 }
 
 // newHTTPServer creates an HTTP server with the provided router and configuration

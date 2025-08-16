@@ -138,3 +138,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 
 	return s.userRepo.Delete(ctx, id)
 }
+
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.userRepo.FindByEmail(ctx, email)
+}

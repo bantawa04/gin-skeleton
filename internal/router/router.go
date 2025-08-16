@@ -6,6 +6,7 @@ import (
 	handlers "gin/internal/api/handler"
 	middleware "gin/internal/middleware"
 	response "gin/internal/response"
+	"gin/internal/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +17,9 @@ type Router interface {
 }
 
 func NewRouter(
-
 	userHandler *handlers.UserHandler,
+	authHandler *handlers.AuthHandler,
+	jwtManager *utils.JWTManager,
 ) *gin.Engine {
 	router := gin.Default()
 
@@ -59,16 +61,28 @@ func NewRouter(
 	// API routes
 	api := router.Group("/api")
 	{
+		// Auth routes (public)
+		auth := api.Group("/auth")
+		{
+			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.RefreshToken)
+		}
+
 		// User routes
 		users := api.Group("/users")
 		{
 			users.GET("", userHandler.GetAllUsers)
 			users.GET("/:id", userHandler.GetUserByID)
 			users.POST("", userHandler.CreateUser)
-			users.PATCH("/:id", userHandler.UpdateUser)
-			users.DELETE("/:id", userHandler.DeleteUser)
-		}
 
+			// Protected routes - require JWT authentication
+			protected := users.Group("/")
+			protected.Use(middleware.JWTAuthMiddleware(jwtManager))
+			{
+				protected.PUT("/:id", userHandler.UpdateUser)
+				protected.DELETE("/:id", userHandler.DeleteUser)
+			}
+		}
 	}
 	return router
 }
