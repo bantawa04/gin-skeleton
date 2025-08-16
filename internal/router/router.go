@@ -22,6 +22,7 @@ func NewRouter(
 	router := gin.Default()
 
 	// Add middleware
+	router.Use(middleware.LoggingMiddleware())
 	router.Use(middleware.CaseConverterMiddleware())
 	router.Use(exceptions.ErrorHandler())
 

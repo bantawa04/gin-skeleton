@@ -4,6 +4,7 @@ import (
 	"context"
 	userHandler "gin/internal/api/handler"
 	"gin/internal/config"
+	"gin/internal/logger"
 	userRepository "gin/internal/repository/user"
 	"gin/internal/router"
 	userService "gin/internal/service/user"
@@ -86,6 +87,14 @@ func bootstrap(
 	// Register server start and stop hooks
 	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
+			// Initialize logger
+			if err := logger.Init(); err != nil {
+				log.Printf("Failed to initialize logger: %v", err)
+				// Continue without logger rather than failing
+			} else {
+				logger.LogInfo("Logger initialized successfully", nil)
+			}
+
 			log.Println("Starting Application")
 			log.Println("------------------------")
 			log.Println("-- Gin API --")
