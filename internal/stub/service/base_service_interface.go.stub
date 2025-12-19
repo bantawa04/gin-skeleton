@@ -1,14 +1,15 @@
-package {{name}}
+package service
 
 import (
 	"context"
+	"gin/internal/{{name}}"
 )
 
 // {{Name}}ServiceInterface defines service operations
 type {{Name}}ServiceInterface interface {
-	Create(ctx context.Context, payload *{{Name}}) (*{{Name}}, error)
-	GetByID(ctx context.Context, id string) (*{{Name}}, error)
-	List(ctx context.Context) ([]*{{Name}}, error)
+	Create(ctx context.Context, payload *{{name}}.{{Name}}) (*{{name}}.{{Name}}, error)
+	GetByID(ctx context.Context, id string) (*{{name}}.{{Name}}, error)
+	List(ctx context.Context) ([]*{{name}}.{{Name}}, error)
 	Update(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
 }

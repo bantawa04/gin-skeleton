@@ -135,8 +135,9 @@ scaffold: ## Generate repository, service, and module stubs (usage: make scaffol
 	fi
 	@DOMAIN_PKG=$$(echo "$(name)" | tr 'A-Z' 'a-z'); \
 	DOMAIN_PASCAL=$$(echo "$(name)" | sed -E 's/(^|[_-])(.)/\U\2/g'); \
-	REPO_DIR=internal/repository/$$DOMAIN_PKG; \
-	SVC_DIR=internal/service/$$DOMAIN_PKG; \
+	DOMAIN_DIR=internal/$$DOMAIN_PKG; \
+	REPO_DIR=$$DOMAIN_DIR/repository; \
+	SVC_DIR=$$DOMAIN_DIR/service; \
 	MODULE_DIR=internal/bootstrap/modules; \
 	mkdir -p $$REPO_DIR $$SVC_DIR $$MODULE_DIR; \
 	sed -e "s/{{name}}/$$DOMAIN_PKG/g" -e "s/{{Name}}/$$DOMAIN_PASCAL/g" internal/stub/repository/base_repository.go.stub > $$REPO_DIR/$$DOMAIN_PKG\_repository.go; \

@@ -1,7 +1,8 @@
-package {{name}}
+package service
 
 import (
 	"context"
+	"gin/internal/{{name}}"
 	"gin/internal/{{name}}/repository"
 )
 
@@ -18,17 +19,17 @@ func New{{Name}}Service(repo repository.{{Name}}RepositoryInterface) {{Name}}Ser
 }
 
 // Create delegates to repository
-func (s *{{Name}}Service) Create(ctx context.Context, payload *{{Name}}) (*{{Name}}, error) {
+func (s *{{Name}}Service) Create(ctx context.Context, payload *{{name}}.{{Name}}) (*{{name}}.{{Name}}, error) {
 	return s.repo.Create(ctx, payload)
 }
 
 // GetByID delegates to repository
-func (s *{{Name}}Service) GetByID(ctx context.Context, id string) (*{{Name}}, error) {
+func (s *{{Name}}Service) GetByID(ctx context.Context, id string) (*{{name}}.{{Name}}, error) {
 	return s.repo.FindByID(ctx, id)
 }
 
 // List delegates to repository
-func (s *{{Name}}Service) List(ctx context.Context) ([]*{{Name}}, error) {
+func (s *{{Name}}Service) List(ctx context.Context) ([]*{{name}}.{{Name}}, error) {
 	return s.repo.FindAll(ctx)
 }
 

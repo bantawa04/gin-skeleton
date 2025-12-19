@@ -1,7 +1,8 @@
-package {{name}}
+package repository
 
 import (
 	"context"
+	"gin/internal/{{name}}"
 
 	"gorm.io/gorm"
 )
@@ -26,7 +27,7 @@ func (r *{{Name}}Repository) getDB(ctx context.Context) *gorm.DB {
 }
 
 // Create inserts a new {{Name}} record
-func (r *{{Name}}Repository) Create(ctx context.Context, m *{{Name}}) (*{{Name}}, error) {
+func (r *{{Name}}Repository) Create(ctx context.Context, m *{{name}}.{{Name}}) (*{{name}}.{{Name}}, error) {
 	if err := r.getDB(ctx).WithContext(ctx).Create(m).Error; err != nil {
 		return nil, err
 	}
@@ -34,8 +35,8 @@ func (r *{{Name}}Repository) Create(ctx context.Context, m *{{Name}}) (*{{Name}}
 }
 
 // FindByID retrieves a {{Name}} by ID
-func (r *{{Name}}Repository) FindByID(ctx context.Context, id string) (*{{Name}}, error) {
-	var record {{Name}}
+func (r *{{Name}}Repository) FindByID(ctx context.Context, id string) (*{{name}}.{{Name}}, error) {
+	var record {{name}}.{{Name}}
 	if err := r.getDB(ctx).WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -46,8 +47,8 @@ func (r *{{Name}}Repository) FindByID(ctx context.Context, id string) (*{{Name}}
 }
 
 // FindAll retrieves all {{Name}} records
-func (r *{{Name}}Repository) FindAll(ctx context.Context) ([]*{{Name}}, error) {
-	var records []*{{Name}}
+func (r *{{Name}}Repository) FindAll(ctx context.Context) ([]*{{name}}.{{Name}}, error) {
+	var records []*{{name}}.{{Name}}
 	if err := r.getDB(ctx).WithContext(ctx).Find(&records).Error; err != nil {
 		return nil, err
 	}
@@ -56,10 +57,10 @@ func (r *{{Name}}Repository) FindAll(ctx context.Context) ([]*{{Name}}, error) {
 
 // UpdateFields updates specific fields by ID
 func (r *{{Name}}Repository) UpdateFields(ctx context.Context, id string, updates map[string]interface{}) error {
-	return r.getDB(ctx).WithContext(ctx).Model(&{{Name}}{}).Where("id = ?", id).Updates(updates).Error
+	return r.getDB(ctx).WithContext(ctx).Model(&{{name}}.{{Name}}{}).Where("id = ?", id).Updates(updates).Error
 }
 
 // Delete removes a {{Name}} by ID
 func (r *{{Name}}Repository) Delete(ctx context.Context, id string) error {
-	return r.getDB(ctx).WithContext(ctx).Where("id = ?", id).Delete(&{{Name}}{}).Error
+	return r.getDB(ctx).WithContext(ctx).Where("id = ?", id).Delete(&{{name}}.{{Name}}{}).Error
 }
