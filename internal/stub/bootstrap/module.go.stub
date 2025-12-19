@@ -1,0 +1,16 @@
+package modules
+
+import (
+	repository "gin/internal/{{name}}/repository"
+	service "gin/internal/{{name}}/service"
+
+	"go.uber.org/fx"
+)
+
+// {{Name}}Module wires repository and service for {{Name}}
+var {{Name}}Module = fx.Options(
+	fx.Provide(repository.New{{Name}}Repository),
+	fx.Provide(service.New{{Name}}Service),
+	// fx.Provide(handler.New{{Name}}Handler), // uncomment when handler exists
+)
+

@@ -1,0 +1,14 @@
+package {{name}}
+
+import (
+	"context"
+)
+
+// {{Name}}RepositoryInterface defines repository operations
+type {{Name}}RepositoryInterface interface {
+	Create(ctx context.Context, m *{{Name}}) (*{{Name}}, error)
+	FindByID(ctx context.Context, id string) (*{{Name}}, error)
+	FindAll(ctx context.Context) ([]*{{Name}}, error)
+	UpdateFields(ctx context.Context, id string, updates map[string]interface{}) error
+	Delete(ctx context.Context, id string) error
+}

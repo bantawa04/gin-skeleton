@@ -1,0 +1,43 @@
+package {{name}}
+
+import (
+	"context"
+	"gin/internal/{{name}}/repository"
+)
+
+// {{Name}}Service implements business logic for {{Name}}
+type {{Name}}Service struct {
+	repo repository.{{Name}}RepositoryInterface
+}
+
+// New{{Name}}Service creates a new {{Name}} service
+func New{{Name}}Service(repo repository.{{Name}}RepositoryInterface) {{Name}}ServiceInterface {
+	return &{{Name}}Service{
+		repo: repo,
+	}
+}
+
+// Create delegates to repository
+func (s *{{Name}}Service) Create(ctx context.Context, payload *{{Name}}) (*{{Name}}, error) {
+	return s.repo.Create(ctx, payload)
+}
+
+// GetByID delegates to repository
+func (s *{{Name}}Service) GetByID(ctx context.Context, id string) (*{{Name}}, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
+// List delegates to repository
+func (s *{{Name}}Service) List(ctx context.Context) ([]*{{Name}}, error) {
+	return s.repo.FindAll(ctx)
+}
+
+// Update delegates to repository
+func (s *{{Name}}Service) Update(ctx context.Context, id string, updates map[string]interface{}) error {
+	return s.repo.UpdateFields(ctx, id, updates)
+}
+
+// Delete delegates to repository
+func (s *{{Name}}Service) Delete(ctx context.Context, id string) error {
+	return s.repo.Delete(ctx, id)
+}

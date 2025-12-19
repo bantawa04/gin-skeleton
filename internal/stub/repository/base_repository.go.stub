@@ -1,0 +1,65 @@
+package {{name}}
+
+import (
+	"context"
+
+	"gorm.io/gorm"
+)
+
+// {{Name}}Repository handles database operations for {{Name}}
+type {{Name}}Repository struct {
+	db *gorm.DB
+}
+
+// New{{Name}}Repository creates a new repository instance
+func New{{Name}}Repository(db *gorm.DB) *{{Name}}Repository {
+	return &{{Name}}Repository{db: db}
+}
+
+// getDB retrieves the database connection from context if transaction exists, otherwise returns default db
+func (r *{{Name}}Repository) getDB(ctx context.Context) *gorm.DB {
+	// Try to get transaction from context (set by transaction middleware)
+	if tx, ok := ctx.Value("db_transaction").(*gorm.DB); ok {
+		return tx
+	}
+	return r.db
+}
+
+// Create inserts a new {{Name}} record
+func (r *{{Name}}Repository) Create(ctx context.Context, m *{{Name}}) (*{{Name}}, error) {
+	if err := r.getDB(ctx).WithContext(ctx).Create(m).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// FindByID retrieves a {{Name}} by ID
+func (r *{{Name}}Repository) FindByID(ctx context.Context, id string) (*{{Name}}, error) {
+	var record {{Name}}
+	if err := r.getDB(ctx).WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &record, nil
+}
+
+// FindAll retrieves all {{Name}} records
+func (r *{{Name}}Repository) FindAll(ctx context.Context) ([]*{{Name}}, error) {
+	var records []*{{Name}}
+	if err := r.getDB(ctx).WithContext(ctx).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+// UpdateFields updates specific fields by ID
+func (r *{{Name}}Repository) UpdateFields(ctx context.Context, id string, updates map[string]interface{}) error {
+	return r.getDB(ctx).WithContext(ctx).Model(&{{Name}}{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// Delete removes a {{Name}} by ID
+func (r *{{Name}}Repository) Delete(ctx context.Context, id string) error {
+	return r.getDB(ctx).WithContext(ctx).Where("id = ?", id).Delete(&{{Name}}{}).Error
+}

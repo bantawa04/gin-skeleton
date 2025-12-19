@@ -1,0 +1,458 @@
+basePath: /api
+definitions:
+  gin_internal_dto.LoginRequestDTO:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  gin_internal_dto.LoginResponseDTO:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        type: integer
+      refreshToken:
+        type: string
+      tokenType:
+        type: string
+      user:
+        $ref: '#/definitions/gin_internal_dto.UserDTO'
+    type: object
+  gin_internal_dto.RefreshTokenRequestDTO:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  gin_internal_dto.RefreshTokenResponseDTO:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        type: integer
+      tokenType:
+        type: string
+    type: object
+  gin_internal_dto.UserCreateDTO:
+    properties:
+      email:
+        maxLength: 255
+        minLength: 2
+        type: string
+      firstName:
+        maxLength: 255
+        minLength: 2
+        type: string
+      lastName:
+        maxLength: 255
+        minLength: 2
+        type: string
+      password:
+        maxLength: 255
+        minLength: 8
+        type: string
+    required:
+    - email
+    - firstName
+    - lastName
+    - password
+    type: object
+  gin_internal_dto.UserDTO:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      district:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      fullName:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+      lastSignInAt:
+        type: string
+      phone:
+        type: string
+      province:
+        type: string
+      socialProvider:
+        type: string
+      socialProviderId:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  gin_internal_dto.UserUpdateDTO:
+    properties:
+      email:
+        maxLength: 255
+        minLength: 2
+        type: string
+      firstName:
+        maxLength: 255
+        minLength: 2
+        type: string
+      lastName:
+        maxLength: 255
+        minLength: 2
+        type: string
+      password:
+        maxLength: 255
+        minLength: 8
+        type: string
+    required:
+    - email
+    - firstName
+    - lastName
+    type: object
+  gin_internal_response.ErrorResponse:
+    properties:
+      data: {}
+      description:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  gin_internal_response.Response:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  internal_api_handler.HealthResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        type: string
+      timestamp:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: |-
+    A production-ready Go API boilerplate built with Gin, GORM, and Uber FX
+    This API provides user management and authentication functionality
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Gin Skeleton API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, receive access and refresh
+        tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/gin_internal_dto.LoginRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/gin_internal_dto.LoginResponseDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+      summary: User login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new access token using a valid refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/gin_internal_dto.RefreshTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/gin_internal_dto.RefreshTokenResponseDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check the health status of the API and database connectivity
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_api_handler.HealthResponse'
+              type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_api_handler.HealthResponse'
+              type: object
+      summary: Health check
+      tags:
+      - health
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User creation data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/gin_internal_dto.UserCreateDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/gin_internal_dto.UserDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user account
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gin_internal_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Get a specific user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/gin_internal_dto.UserDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+      summary: Get user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user's information
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User update data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/gin_internal_dto.UserUpdateDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin_internal_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/gin_internal_dto.UserDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin_internal_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: 'Type "Bearer" followed by a space and JWT token. Example: "Bearer
+      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

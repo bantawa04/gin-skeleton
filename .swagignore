@@ -1,0 +1,45 @@
+# Swagger ignore file
+# Files and directories to ignore when generating Swagger documentation
+
+# Dependencies
+vendor/
+node_modules/
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Test files
+*_test.go
+
+# Migration files
+database/migrations/
+
+# Docker
+docker/
+docker-compose.yml
+*.Dockerfile
+
+# Config
+.env
+.env.local
+
