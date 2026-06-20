@@ -9,12 +9,18 @@ services:
       - .:/app
     ports:
       - "8000:8000"
-    env_file:
-      - .env
     environment:
       GIN_MODE: ${GIN_MODE:-debug}
       DB_HOST: postgres
       DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-gin_skeleton}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-168h}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-720h}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
       SWAGGER_BASIC_AUTH_USERNAME: ${SWAGGER_BASIC_AUTH_USERNAME:-admin}
       SWAGGER_BASIC_AUTH_PASSWORD: ${SWAGGER_BASIC_AUTH_PASSWORD:-change-me}
