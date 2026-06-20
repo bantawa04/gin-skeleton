@@ -4,22 +4,41 @@ This document outlines the architectural patterns and best practices used in thi
 
 ## Domain-Oriented Structure
 
-We organize code by domain; each domain contains its own handler, requests, DTOs, model, service, and repository.
+Runtime code is organized behind one executable entrypoint and three internal package groups:
+
+- `cmd/api` owns the HTTP API binary entrypoint.
+- `internal/domain` owns business capabilities and domain-specific HTTP/application/data code.
+- `internal/infra` owns framework, database, configuration, logging, routing, middleware, and dependency-injection adapters.
+- `internal/shared` owns cross-domain primitives that are intentionally reusable.
+- `templates` owns top-level scaffolding templates so generated-code assets are not mixed into runtime packages.
 
 ### Domain folders
-- `internal/auth/` – auth handler, requests, DTOs
-- `internal/user/` – user handler, DTOs, model, request, service/repository wiring
-- `internal/refresh_token/` – refresh token model/DTO + repo/service wiring
-- `internal/health/` – health handler
-- Cross-cutting: `internal/middleware/`, `internal/response/`, `internal/utils/`, `internal/bootstrap/modules/`
+- `internal/domain/auth/` - auth handler, requests, DTOs, and service logic.
+- `internal/domain/user/` - user handler, requests, DTOs, model, service, and repository.
+- `internal/domain/refresh_token/` - refresh-token model, DTOs, service, and repository.
+- `internal/domain/health/` - health-check handler.
 
 ### Layer responsibilities (per domain)
 - **Request**: Bind/validate incoming JSON (`binding` tags) within the domain package.
 - **DTO**: Response shapes and mappers (`FromUserModel`, etc.) within the domain package.
-- **Model**: GORM entities in the domain package (e.g., `internal/user/model.go`).
+- **Model**: GORM entities in the domain package (for example, `internal/domain/user/model.go`).
 - **Handler**: HTTP orchestration (bind -> validate -> call service -> respond) in the domain package.
 - **Service**: Business logic; calls repositories; no transport logic.
 - **Repository**: Data access with GORM; no business rules.
+
+### Infrastructure folders
+- `internal/infra/bootstrap/` - Uber Fx application construction and module composition.
+- `internal/infra/config/` - environment loading and typed runtime configuration.
+- `internal/infra/logger/` - logging adapter setup.
+- `internal/infra/middleware/` - Gin middleware.
+- `internal/infra/router/` - route registration and API grouping.
+
+### Shared folders
+- `internal/shared/constant/` - constants used by multiple domains.
+- `internal/shared/exception/` - application error types and constructors.
+- `internal/shared/response/` - response envelope helpers.
+- `internal/shared/utils/` - generic helpers such as token and binding utilities.
+- `internal/shared/validator/` - validator setup and validation helpers.
 
 ### Handler pattern (current)
 ```go
@@ -130,21 +149,52 @@ All error responses are formatted by error middleware:
 - **Why**: Automatic transaction management for write operations
 - **Benefit**: Data consistency, easier to use
 
+### 5. Explicit API Entrypoint
+- **Why**: `cmd/api/main.go` makes the deployable binary explicit and keeps startup code outside reusable packages.
+- **Benefit**: Clear build target for local development, Docker, Swagger generation, and future additional commands.
+
+### 6. Infrastructure Isolation
+- **Why**: Gin, GORM, logging, configuration, and Fx wiring are framework concerns, not domain concerns.
+- **Benefit**: Domains stay focused on application behavior while adapters remain replaceable and easier to test.
+
+### 7. Goose Migrations
+- **Why**: Goose provides a simple SQL-first migration workflow with timestamped files and explicit up/down control.
+- **Benefit**: Schema changes can be reviewed, run locally, and run in deployment without coupling migrations to app boot.
+
+### 8. Opt-in Container Migrations
+- **Why**: Containers should normally start the API, not silently mutate the database.
+- **Benefit**: Deployments can choose when to run migrations by enabling the migration mode explicitly.
+
 ## Folder Structure Summary
 
 ```
+cmd/
+└── api/
+    └── main.go          # API binary entrypoint
+
 internal/
-├── auth/              # Auth domain (handler, requests, DTOs)
-├── user/              # User domain (handler, DTOs, request, model)
-├── refresh_token/     # Refresh token domain (model, DTO)
-├── repository/        # Shared repos (domain-scoped: user/, refresh_token/)
-├── service/           # Shared services (domain-scoped: user/, refresh_token/)
-├── health/            # Health handler
-├── bootstrap/modules/ # Fx modules wiring domains
-├── middleware/        # HTTP middleware
-├── response/          # Response helpers and formats
-├── utils/             # Utilities (binding errors, JWT, etc.)
-└── api/exception/     # Error types and middleware
+├── domain/
+│   ├── auth/
+│   ├── user/
+│   ├── refresh_token/
+│   └── health/
+├── infra/
+│   ├── bootstrap/
+│   ├── config/
+│   ├── logger/
+│   ├── middleware/
+│   └── router/
+└── shared/
+    ├── constant/
+    ├── exception/
+    ├── response/
+    ├── utils/
+    └── validator/
+
+database/
+└── migrations/        # Goose SQL migrations
+
+templates/             # Top-level scaffolding templates
 ```
 
 ## Best Practices
@@ -159,4 +209,5 @@ internal/
 8. ✅ **Database operations in repositories** - not in services
 9. ✅ **Use dependency injection** (Uber Fx) for all components
 10. ✅ **Use context** for request-scoped data (user ID, request ID, transactions)
-
+11. ✅ **Keep migration execution explicit** with Goose commands or opt-in container migration mode
+12. ✅ **Keep scaffolding templates top-level** under `templates/`, outside runtime packages

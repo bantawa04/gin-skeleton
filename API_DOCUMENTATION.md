@@ -4,6 +4,8 @@
 
 This project uses **Swagger/OpenAPI** for API documentation, powered by [swaggo/swag](https://github.com/swaggo/swag).
 
+Swagger generation is anchored on the API binary entrypoint at `cmd/api/main.go`. Runtime code is organized under `internal/domain`, `internal/infra`, and `internal/shared`, so generated docs should parse internal packages when scanning annotations.
+
 ## Quick Start
 
 ### 1. Generate Documentation
@@ -13,13 +15,13 @@ This project uses **Swagger/OpenAPI** for API documentation, powered by [swaggo/
 make swagger
 
 # Or manually
-swag init -g cmd/api/main.go -o ./docs
+swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
 ```
 
 ### 2. Start the Server
 
 ```bash
-go run cmd/api/main.go
+go run ./cmd/api
 ```
 
 ### 3. Access Swagger UI
@@ -51,8 +53,8 @@ Swagger uses special comments (annotations) in your Go code:
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        user  body      dto.UserCreateDTO  true  "User creation data"
-// @Success      201   {object}  response.Response{data=dto.UserDTO}
+// @Param        user  body      user.UserCreateRequest  true  "User creation data"
+// @Success      201   {object}  response.Response{data=user.UserDTO}
 // @Failure      422   {object}  response.ErrorResponse
 // @Router       /users [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
@@ -71,6 +73,18 @@ After running `make swagger`, the following files are created in `./docs/`:
 ### 3. Swagger UI
 
 The Swagger UI is served at `/swagger/index.html` and automatically reads the generated documentation.
+
+## Project Layout Notes
+
+Swagger annotations should stay close to the HTTP handlers in `internal/domain/<domain>/handler`. Request and response types should be referenced from their domain package, while shared response and error envelopes should come from `internal/shared/response`.
+
+Use `cmd/api/main.go` as the generator entrypoint for local development, CI, and Docker builds:
+
+```bash
+swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
+```
+
+The top-level `templates/` directory contains scaffolding templates. When adding a new domain from templates, add Swagger annotations to the generated or new handlers before regenerating `docs/docs.go`, `docs/swagger.json`, and `docs/swagger.yaml`.
 
 ## Annotation Reference
 
@@ -95,7 +109,7 @@ The Swagger UI is served at `/swagger/index.html` and automatically reads the ge
 // @Param        id    path      string  true  "User ID"
 
 // Body parameter
-// @Param        user  body      dto.UserCreateDTO  true  "User data"
+// @Param        user  body      user.UserCreateRequest  true  "User data"
 
 // Header parameter
 // @Param        Authorization  header    string  true  "Bearer token"
@@ -105,7 +119,7 @@ The Swagger UI is served at `/swagger/index.html` and automatically reads the ge
 
 ```go
 // Success response
-// @Success      200  {object}  response.Response{data=dto.UserDTO}
+// @Success      200  {object}  response.Response{data=user.UserDTO}
 
 // Error responses
 // @Failure      400  {object}  response.ErrorResponse
@@ -131,12 +145,12 @@ The Swagger UI is served at `/swagger/index.html` and automatically reads the ge
 ### Users (`/api/users`)
 - ✅ `GET /api/users` - List users (paginated)
 - ✅ `GET /api/users/:id` - Get user by ID
-- ✅ `POST /api/users` - Create user
 - ✅ `PUT /api/users/:id` - Update user (protected)
 - ✅ `DELETE /api/users/:id` - Delete user (protected)
 
-### Health (`/health`)
+### Health (`/health`, `/api/health`)
 - ✅ `GET /health` - Health check
+- ✅ `GET /api/health` - Health check
 
 ## Using Swagger UI
 
@@ -187,8 +201,8 @@ For protected endpoints:
 // @Tags         your-tag
 // @Accept       json
 // @Produce      json
-// @Param        param  body      dto.YourDTO  true  "Description"
-// @Success      200    {object}  response.Response{data=dto.YourResponseDTO}
+// @Param        param  body      yourdomain.YourRequest  true  "Description"
+// @Success      200    {object}  response.Response{data=yourdomain.YourDTO}
 // @Failure      400    {object}  response.ErrorResponse
 // @Router       /your-path [post]
 func (h *YourHandler) YourMethod(c *gin.Context) {
@@ -235,7 +249,7 @@ make swagger
 ### 4. Use Proper Response Types
 ```go
 // ✅ Good - Specific response type
-// @Success      200  {object}  response.Response{data=dto.UserDTO}
+// @Success      200  {object}  response.Response{data=user.UserDTO}
 
 // ❌ Bad - Generic type
 // @Success      200  {object}  map[string]interface{}
@@ -260,7 +274,7 @@ make swagger
 
 2. **Restart server**:
    ```bash
-   go run cmd/api/main.go
+   go run ./cmd/api
    ```
 
 3. **Clear browser cache** or use incognito mode
@@ -270,6 +284,7 @@ make swagger
 - Check that annotations are correct
 - Verify the handler function is exported (capital letter)
 - Ensure the route is registered in router
+- Ensure the generator is using `cmd/api/main.go` and `--parseInternal`
 
 ### Build Errors?
 
@@ -279,6 +294,10 @@ go clean
 go mod tidy
 go build ./cmd/api
 ```
+
+### Migration-related Startup Issues?
+
+Swagger generation does not run database migrations. Database schema changes are handled separately with Goose files in `database/migrations`. In Docker, migrations are opt-in; enable the migration mode for environments that should apply schema changes during container startup.
 
 ## Alternative Tools
 
@@ -304,6 +323,3 @@ For Gin projects, `swaggo/swag` is recommended for its simplicity and Gin integr
 - Access UI: `http://localhost:8000/swagger/index.html`
 - Add annotations to new endpoints
 - Regenerate after changes
-
-Happy documenting! 📚
-

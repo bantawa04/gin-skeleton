@@ -10,7 +10,7 @@ A production-ready Go API boilerplate built with Gin, GORM, and Uber FX. This sk
 - 🔌 **Dependency Injection**: Uber FX for dependency management and lifecycle
 - 🔐 **Authentication**: JWT-based authentication with access and refresh tokens
 - 🛡️ **Security**: Input sanitization, CORS, rate limiting, XSS protection
-- 📊 **Database**: PostgreSQL with GORM, migrations, and transaction support
+- 📊 **Database**: PostgreSQL with GORM, Goose migrations, and transaction support
 - 📝 **Logging**: Structured logging with logrus and file rotation
 - ✅ **Validation**: Request validation with go-playground/validator
 - 🔄 **Case Conversion**: Automatic camelCase ↔ snake_case conversion
@@ -25,27 +25,31 @@ A production-ready Go API boilerplate built with Gin, GORM, and Uber FX. This sk
 gin-skeleton/
 ├── cmd/
 │   └── api/
-│       └── main.go              # Application entry point
+│       └── main.go              # API binary entrypoint
 ├── database/
-│   └── migrations/              # Database migrations
+│   └── migrations/              # Goose SQL migrations
 ├── docker/
 │   └── web.Dockerfile           # Docker configuration
 ├── internal/
-│   ├── auth/                    # Auth domain (handler, DTOs, requests)
-│   ├── user/                    # User domain (handler, DTOs, request, model)
-│   ├── refresh_token/           # Refresh token domain (model, DTO)
-│   ├── health/                  # Health handler
-│   ├── bootstrap/               # Application bootstrap with FX (modules wiring domains)
-│   ├── config/                  # Configuration management
-│   ├── constant/                # Application constants
-│   ├── logger/                  # Logging utilities
-│   ├── middleware/              # HTTP middlewares
-│   ├── repository/              # Data access layer (domain-scoped subfolders)
-│   ├── response/                # Response helpers
-│   ├── router/                  # Route definitions
-│   ├── service/                 # Business logic layer (domain-scoped subfolders)
-│   ├── utils/                   # Utility functions
-│   └── validator/               # Validation logic
+│   ├── domain/                  # Business domains (auth, user, refresh token, health)
+│   │   ├── auth/                # Auth handlers, requests, DTOs, service
+│   │   ├── user/                # User handlers, requests, DTOs, model, service, repository
+│   │   ├── refresh_token/       # Refresh token model, service, repository
+│   │   └── health/              # Health handler
+│   ├── infra/                   # Infrastructure adapters and wiring
+│   │   ├── bootstrap/           # Uber FX application and module composition
+│   │   ├── config/              # Environment and runtime configuration
+│   │   ├── database/            # GORM connection and database setup
+│   │   ├── logger/              # Logging adapter
+│   │   ├── middleware/          # HTTP middleware
+│   │   └── router/              # Gin route registration
+│   └── shared/                  # Cross-domain primitives and helpers
+│       ├── constant/            # Shared constants
+│       ├── exception/           # Error types and error helpers
+│       ├── response/            # Response envelopes
+│       ├── utils/               # Shared utilities
+│       └── validator/           # Validation helpers
+├── templates/                   # Top-level scaffolding templates
 ├── docker-compose.yml           # Docker Compose configuration
 ├── env.example                  # Environment variables template
 ├── go.mod                       # Go module dependencies
@@ -86,7 +90,6 @@ The application follows a clean architecture pattern:
 - Go 1.25.0 or higher
 - PostgreSQL 12 or higher
 - Make (optional, for using Makefile commands)
-- golang-migrate CLI (for database migrations)
 
 ## Installation
 
@@ -107,40 +110,35 @@ The application follows a clean architecture pattern:
    # Edit .env with your configuration
    ```
 
-4. **Install migration tool** (if not already installed)
-   ```bash
-   make install-migrate
-   # Or manually: brew install golang-migrate (macOS)
-   ```
-
-5. **Run database migrations**
+4. **Run database migrations**
    ```bash
    make migrate-up
    ```
 
-6. **Start the application**
+5. **Start the application**
    ```bash
-   go run cmd/api/main.go
+   go run ./cmd/api
    ```
 
 The API will be available at `http://localhost:8000`
 
 ## Scaffolding a new domain
 
-Generate repository, service, and fx module wiring from stubs:
+Generate repository, service, and Fx module wiring from top-level templates:
 
 ```bash
 make scaffold name=book
 ```
 
 This creates:
-- `internal/repository/book/book_repository.go` (+ interface)
-- `internal/service/book/book_service.go` (+ interface)
-- `internal/bootstrap/modules/book_module.go`
+- `internal/domain/book/repository/book_repository.go` (+ interface)
+- `internal/domain/book/service/book_service.go` (+ interface)
+- `internal/infra/bootstrap/modules/book_module.go`
 
 Notes:
 - The `name` argument is converted to lower-case for packages and PascalCase for types.
-- You still need to add the model in `internal/models` and, if needed, handlers/DTOs.
+- Templates live under `templates/` so scaffolding assets are not mixed into runtime packages.
+- You still need to add the model, handlers, requests, and DTOs under `internal/domain/<name>/` when needed.
 
 ## Configuration
 
@@ -192,7 +190,7 @@ The Swagger UI provides:
 make swagger
 
 # Or manually
-swag init -g cmd/api/main.go -o ./docs
+swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
 ```
 
 ### API Endpoints
@@ -201,12 +199,11 @@ swag init -g cmd/api/main.go -o ./docs
 
 - `GET /ping` - Health check (simple)
 - `GET /health` - Health check with database connectivity
-- `GET /swagger/*any` - Swagger API documentation
+- `GET /swagger/*any` - Swagger API documentation (basic auth)
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh access token
 - `GET /api/users` - List users (paginated)
 - `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create new user
 
 #### Protected Endpoints (Require JWT)
 
@@ -214,6 +211,14 @@ swag init -g cmd/api/main.go -o ./docs
 - `DELETE /api/users/:id` - Delete user
 
 ## Database Migrations
+
+Migrations use [Goose](https://github.com/pressly/goose) with SQL files stored in `database/migrations`.
+
+The recommended workflow uses the embedded migration runner:
+
+```bash
+make migrate-up
+```
 
 ### Create a new migration
 ```bash
@@ -230,14 +235,14 @@ make migrate-up
 make migrate-down
 ```
 
-### Rollback all migrations
-```bash
-make migrate-down-all
-```
-
 ### Check migration status
 ```bash
 make migrate-status
+```
+
+### Baseline an existing database
+```bash
+make migrate-baseline
 ```
 
 ### Fresh migration (drop all and rerun)
@@ -277,12 +282,12 @@ The application uses JWT tokens for authentication:
 
 ### Running in Development Mode
 ```bash
-go run cmd/api/main.go
+go run ./cmd/api
 ```
 
 ### Building
 ```bash
-go build -o bin/api cmd/api/main.go
+go build -o bin/api ./cmd/api
 ```
 
 ### Running Tests
@@ -294,7 +299,7 @@ go test ./...
 ```bash
 make swagger
 # Or
-swag init -g cmd/api/main.go -o ./docs
+swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
 ```
 
 After generating, access the documentation at `http://localhost:8000/swagger/index.html`
@@ -318,8 +323,18 @@ docker build -f docker/web.Dockerfile -t gin-skeleton .
 
 ### Run with Docker Compose
 ```bash
-docker-compose up
+docker compose up
 ```
+
+### Opt-in Docker migrations
+
+Docker startup does not run migrations by default. Apply migrations explicitly before starting the app, or opt in with the migration mode provided by the deployment configuration:
+
+```bash
+RUN_MIGRATIONS=true docker compose up
+```
+
+Keep automatic migrations disabled for normal application startup unless the environment is prepared for schema changes during container boot.
 
 ## Logging
 
@@ -383,5 +398,3 @@ This project is open source and available under the MIT License.
 ## Support
 
 For issues and questions, please open an issue on the repository.
-
-
