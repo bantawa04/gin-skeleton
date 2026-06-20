@@ -1,14 +1,19 @@
 package router
 
 import (
+	"crypto/subtle"
 	_ "gin/docs" // Swagger documentation
 	authhandler "gin/internal/domain/auth/handler"
-	exceptions "gin/internal/shared/exception"
 	healthhandler "gin/internal/domain/health/handler"
+	"gin/internal/infra/config"
 	middleware "gin/internal/infra/middleware"
+	exceptions "gin/internal/shared/exception"
 	response "gin/internal/shared/response"
-	userhandler "gin/internal/domain/user/handler"
 	"gin/internal/shared/utils"
+	userhandler "gin/internal/domain/user/handler"
+	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -20,17 +25,26 @@ type Router interface {
 	Run(addr ...string) error
 }
 
+type routerDeps struct {
+	userHandler   *userhandler.UserHandler
+	authHandler   *authhandler.AuthHandler
+	healthHandler *healthhandler.HealthHandler
+	jwtManager    *utils.JWTManager
+	db            *gorm.DB
+}
+
 func NewRouter(
 	userHandler *userhandler.UserHandler,
 	authHandler *authhandler.AuthHandler,
 	healthHandler *healthhandler.HealthHandler,
 	jwtManager *utils.JWTManager,
+	cfg *config.Config,
 	db *gorm.DB,
 ) *gin.Engine {
 	router := gin.Default()
 
 	// Add global middleware (order matters)
-	router.Use(middleware.CORSMiddleware())          // CORS should be first
+	router.Use(middleware.CORSMiddleware(cfg.CORS().AllowedOrigins)) // CORS should be first
 	router.Use(middleware.RequestIDMiddleware())     // Request ID for tracing
 	router.Use(middleware.LoggingMiddleware())       // Structured logging
 	router.Use(middleware.SanitizeMiddleware())      // Input sanitization (XSS prevention)
@@ -48,48 +62,61 @@ func NewRouter(
 		response.SendResponse(c, "pong", "pong")
 	})
 
-	// Health check endpoint (no middleware needed, should be fast)
 	router.GET("/health", healthHandler.Health)
 
-	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Gin Skeleton API is running",
+			"health":  "/api/health",
+			"docs":    "/swagger/index.html",
+		})
+	})
+
+	registerSwaggerRoutes(router, cfg)
 
 	// API routes
 	api := router.Group("/api")
-	{
-		// Auth routes (public) - with rate limiting and transaction
-		auth := api.Group("/auth")
-		auth.Use(middleware.RateLimitMiddleware("10-M")) // 10 requests per minute for auth endpoints
-		{
-			auth.POST("/signup", middleware.TransactionMiddleware(db), authHandler.Signup)
-			// Login creates tokens, use transaction
-			auth.POST("/login", middleware.TransactionMiddleware(db), authHandler.Login)
-			// Refresh token updates tokens, use transaction
-			auth.POST("/refresh", middleware.TransactionMiddleware(db), authHandler.RefreshToken)
-
-			// Logout requires authentication - user must be logged in to logout
-			auth.POST("/logout", middleware.JWTAuthMiddleware(jwtManager), middleware.TransactionMiddleware(db), authHandler.Logout)
-		}
-
-		// User routes - with transaction middleware for write operations
-		users := api.Group("/users")
-		{
-			// Read operations (no transaction needed)
-			users.GET("", userHandler.GetAllUsers)
-			users.GET("/:id", userHandler.GetUserByID)
-
-			// Write operations (with transaction)
-			// users.POST("", middleware.TransactionMiddleware(db), userHandler.CreateUser)
-
-			// Protected routes - require JWT authentication
-			protected := users.Group("/")
-			protected.Use(middleware.JWTAuthMiddleware(jwtManager))
-			{
-				// Write operations (with transaction)
-				protected.PUT("/:id", middleware.TransactionMiddleware(db), userHandler.UpdateUser)
-				protected.DELETE("/:id", middleware.TransactionMiddleware(db), userHandler.DeleteUser)
-			}
-		}
+	deps := &routerDeps{
+		userHandler:   userHandler,
+		authHandler:   authHandler,
+		healthHandler: healthHandler,
+		jwtManager:    jwtManager,
+		db:            db,
 	}
+
+	registerWebRoutes(api, deps)
 	return router
+}
+
+func registerSwaggerRoutes(router *gin.Engine, cfg *config.Config) {
+	swaggerAuth := func(c *gin.Context) {
+		username, password, ok := c.Request.BasicAuth()
+		expected := cfg.Swagger()
+
+		if !ok ||
+			subtle.ConstantTimeCompare([]byte(username), []byte(expected.Username)) != 1 ||
+			subtle.ConstantTimeCompare([]byte(password), []byte(expected.Password)) != 1 {
+			c.Header("WWW-Authenticate", `Basic realm="Gin Skeleton Swagger"`)
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		c.Next()
+	}
+
+	router.GET("/docs/swagger.yaml", swaggerAuth, func(c *gin.Context) {
+		spec, err := os.ReadFile("docs/swagger.yaml")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "spec unavailable"})
+			return
+		}
+		host := c.Request.Host
+		if host == "" {
+			host = "localhost:" + cfg.Server().Port
+		}
+		content := strings.Replace(string(spec), "host: localhost", "host: "+host, 1)
+		c.Header("Content-Type", "application/yaml")
+		c.String(http.StatusOK, content)
+	})
+	router.GET("/swagger/*any", swaggerAuth, ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/docs/swagger.yaml"), ginSwagger.PersistAuthorization(true)))
 }
