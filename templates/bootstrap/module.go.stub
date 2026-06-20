@@ -1,8 +1,8 @@
 package modules
 
 import (
-	repository "gin/internal/{{name}}/repository"
-	service "gin/internal/{{name}}/service"
+	repository "gin/internal/domain/{{name}}/repository"
+	service "gin/internal/domain/{{name}}/service"
 
 	"go.uber.org/fx"
 )

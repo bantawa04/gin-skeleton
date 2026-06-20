@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"gin/internal/{{name}}"
+	"gin/internal/domain/{{name}}"
 )
 
 // {{Name}}ServiceInterface defines service operations

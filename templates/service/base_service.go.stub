@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"gin/internal/{{name}}"
-	"gin/internal/{{name}}/repository"
+	"gin/internal/domain/{{name}}"
+	"gin/internal/domain/{{name}}/repository"
 )
 
 // {{Name}}Service implements business logic for {{Name}}

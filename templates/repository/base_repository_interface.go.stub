@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"gin/internal/{{name}}"
+	"gin/internal/domain/{{name}}"
 )
 
 // {{Name}}RepositoryInterface defines repository operations
