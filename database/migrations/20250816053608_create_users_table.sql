@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE users (
     id CHAR(26) PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
@@ -20,3 +21,6 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL
 );
+
+-- +goose Down
+DROP TABLE IF EXISTS users;

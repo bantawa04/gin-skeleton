@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE refresh_tokens (
     id CHAR(26) PRIMARY KEY,
     user_id CHAR(26) NOT NULL,
@@ -15,5 +16,5 @@ CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 CREATE INDEX idx_refresh_tokens_revoked ON refresh_tokens(revoked);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 
-
-
+-- +goose Down
+DROP TABLE IF EXISTS refresh_tokens;
