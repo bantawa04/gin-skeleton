@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
       target: ${TARGET:-development}
-    container_name: mitho-app
+    container_name: gin-skeleton-app
     volumes:
       - .:/app
     ports:
@@ -12,5 +12,36 @@ services:
     env_file:
       - .env
     environment:
-      - GIN_MODE=${GIN_MODE:-debug}
+      GIN_MODE: ${GIN_MODE:-debug}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+      SWAGGER_BASIC_AUTH_USERNAME: ${SWAGGER_BASIC_AUTH_USERNAME:-admin}
+      SWAGGER_BASIC_AUTH_PASSWORD: ${SWAGGER_BASIC_AUTH_PASSWORD:-change-me}
+      GOFLAGS: -buildvcs=false
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+
+  postgres:
+    image: postgres:18.4-alpine
+    container_name: gin-skeleton-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-gin_skeleton}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
