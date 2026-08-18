@@ -19,12 +19,15 @@ A Go API starter kit built with Gin, GORM, PostgreSQL, and Uber Fx. It provides 
 - **golangci-lint** configuration and Makefile commands
 - **External integration placeholders** for Stripe, AWS S3, and Resend
 - **Domain scaffolding** through Makefile templates
-- **CI-agnostic by design** — no CI provider configuration is bundled
+- **GitHub Actions PR checks** that run tests and linting for pull requests targeting `main`
 
 ## Project Structure
 
 ```text
 gin-skeleton/
+├── .github/
+│   └── workflows/
+│       └── pr-checks.yml                # Test + lint checks for PRs to main
 ├── cmd/
 │   ├── api/
 │   │   └── main.go                    # HTTP API entrypoint
@@ -259,7 +262,22 @@ Apply supported automatic fixes:
 make lint-fix
 ```
 
-The skeleton intentionally does not include GitHub Actions, GitLab CI, CircleCI, or another CI provider. Consumers can wire these commands into whichever CI system they prefer.
+## Pull Request Checks
+
+GitHub Actions runs automated validation for every pull request targeting `main` from any source branch.
+
+The workflow lives at:
+
+```text
+.github/workflows/pr-checks.yml
+```
+
+It runs two independent jobs in parallel:
+
+- `Test` — runs `make test`
+- `Lint` — runs `golangci-lint` using the repository configuration
+
+The workflow intentionally handles validation only; no deployment or release workflow is bundled.
 
 ## Scaffolding a New Domain
 
@@ -318,7 +336,6 @@ JWT_REFRESH_EXPIRY=720h
 
 ```text
 GET  /                         Skeleton status information
-GET  /ping                     Simple pong endpoint
 GET  /health                   Database-aware health check
 GET  /api/health               Database-aware API health check
 GET  /swagger/*any             Swagger UI (basic auth)
@@ -490,6 +507,7 @@ The `logs/` directory and log files are ignored by Git.
 2. Make the change.
 3. Add or update tests where appropriate.
 4. Run `make test` and `make lint`.
-5. Open a pull request.
+5. Open a pull request targeting `main`.
+6. Ensure the automated `Test` and `Lint` checks pass.
 
 For questions or issues, use the repository's GitHub issue tracker.

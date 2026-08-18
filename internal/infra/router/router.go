@@ -5,12 +5,11 @@ import (
 	_ "gin/docs" // Swagger documentation
 	authhandler "gin/internal/domain/auth/handler"
 	healthhandler "gin/internal/domain/health/handler"
+	userhandler "gin/internal/domain/user/handler"
 	"gin/internal/infra/config"
 	middleware "gin/internal/infra/middleware"
 	exceptions "gin/internal/shared/exception"
-	response "gin/internal/shared/response"
 	"gin/internal/shared/utils"
-	userhandler "gin/internal/domain/user/handler"
 	"net/http"
 	"os"
 	"strings"
@@ -58,10 +57,6 @@ func NewRouter(
 	})
 
 	// Register routes
-	router.GET("/ping", func(c *gin.Context) {
-		response.SendResponse(c, "pong", "pong")
-	})
-
 	router.GET("/health", healthHandler.Health)
 
 	router.GET("/", func(c *gin.Context) {
