@@ -1,150 +1,292 @@
 # Gin Skeleton - Go API Boilerplate
 
-A production-ready Go API boilerplate built with Gin, GORM, and Uber FX. This skeleton provides a clean architecture, dependency injection, comprehensive middleware, and best practices for building scalable REST APIs.
+A Go API starter kit built with Gin, GORM, PostgreSQL, and Uber Fx. It provides a domain-oriented project structure, authentication, middleware, migrations, Swagger documentation, linting, API test examples, and placeholder adapters for common external integrations.
 
-> 📖 **See [ARCHITECTURE.md](./ARCHITECTURE.md)** for detailed architectural patterns and best practices.
+> See [ARCHITECTURE.md](./ARCHITECTURE.md) for the architectural patterns and package responsibilities used by the project.
 
 ## Features
 
-- 🏗️ **Clean Architecture**: Layered architecture with Handler → Service → Repository pattern
-- 🔌 **Dependency Injection**: Uber FX for dependency management and lifecycle
-- 🔐 **Authentication**: JWT-based authentication with access and refresh tokens
-- 🛡️ **Security**: Input sanitization, CORS, rate limiting, XSS protection
-- 📊 **Database**: PostgreSQL with GORM, Goose migrations, and transaction support
-- 📝 **Logging**: Structured logging with logrus and file rotation
-- ✅ **Validation**: Request validation with go-playground/validator
-- 🔄 **Case Conversion**: Automatic camelCase ↔ snake_case conversion
-- 🏥 **Health Checks**: Database connectivity health endpoint
-- 🎯 **Request Tracing**: Request ID middleware for distributed tracing
-- ⚡ **Performance**: Connection pooling, optimized middleware, buffer pooling
-- 📚 **API Documentation**: Interactive Swagger/OpenAPI documentation
+- **Domain-oriented architecture** with Handler → Service → Repository separation
+- **Dependency injection** with Uber Fx
+- **JWT authentication** with access and refresh tokens
+- **PostgreSQL + GORM** for persistence
+- **Goose migrations** with a dedicated migration command
+- **HTTP middleware** for CORS, request IDs, logging, sanitization, case conversion, rate limiting, transactions, and centralized error handling
+- **Swagger/OpenAPI** documentation
+- **Structured logging** with logrus and log rotation
+- **Request validation** with go-playground/validator
+- **API tests** using Go's `testing` and `net/http/httptest`
+- **golangci-lint** configuration and Makefile commands
+- **External integration placeholders** for Stripe, AWS S3, and Resend
+- **Domain scaffolding** through Makefile templates
+- **CI-agnostic by design** — no CI provider configuration is bundled
 
 ## Project Structure
 
-```
+```text
 gin-skeleton/
 ├── cmd/
-│   └── api/
-│       └── main.go              # API binary entrypoint
+│   ├── api/
+│   │   └── main.go                    # HTTP API entrypoint
+│   └── migrate/
+│       └── main.go                    # Goose migration command
+│
 ├── database/
-│   └── migrations/              # Goose SQL migrations
+│   └── migrations/                    # SQL migrations
+│
 ├── docker/
-│   └── web.Dockerfile           # Docker configuration
+│   ├── entrypoint.sh
+│   └── web.Dockerfile
+│
+├── docs/                              # Generated Swagger artifacts
+│
 ├── internal/
-│   ├── domain/                  # Business domains (auth, user, refresh token, health)
-│   │   ├── auth/                # Auth handlers, requests, DTOs, service
-│   │   ├── user/                # User handlers, requests, DTOs, model, service, repository
-│   │   ├── refresh_token/       # Refresh token model, service, repository
-│   │   └── health/              # Health handler
-│   ├── infra/                   # Infrastructure adapters and wiring
-│   │   ├── bootstrap/           # Uber FX application and module composition
-│   │   ├── config/              # Environment and runtime configuration
-│   │   ├── database/            # GORM connection and database setup
-│   │   ├── logger/              # Logging adapter
-│   │   ├── middleware/          # HTTP middleware
-│   │   └── router/              # Gin route registration
-│   └── shared/                  # Cross-domain primitives and helpers
-│       ├── constant/            # Shared constants
-│       ├── exception/           # Error types and error helpers
-│       ├── response/            # Response envelopes
-│       ├── utils/               # Shared utilities
-│       └── validator/           # Validation helpers
-├── templates/                   # Top-level scaffolding templates
-├── docker-compose.yml           # Docker Compose configuration
-├── env.example                  # Environment variables template
-├── go.mod                       # Go module dependencies
-├── Makefile                     # Build and migration commands
-└── README.md                    # This file
+│   ├── domain/                        # Business capabilities
+│   │   ├── auth/
+│   │   ├── health/
+│   │   ├── refresh_token/
+│   │   └── user/
+│   │       ├── handler/
+│   │       ├── repository/
+│   │       ├── service/
+│   │       ├── dto.go
+│   │       ├── model.go
+│   │       └── request.go
+│   │
+│   ├── infra/                         # Framework and external adapters
+│   │   ├── bootstrap/                 # Fx application/module composition
+│   │   ├── config/                    # Environment/runtime configuration
+│   │   ├── integration/               # Third-party service adapters
+│   │   │   ├── resend/
+│   │   │   │   └── client.go
+│   │   │   ├── s3/
+│   │   │   │   └── client.go
+│   │   │   └── stripe/
+│   │   │       └── client.go
+│   │   ├── logger/
+│   │   ├── middleware/
+│   │   └── router/
+│   │       ├── router.go
+│   │       ├── web.go
+│   │       └── web_test.go            # Router-level API tests
+│   │
+│   └── shared/                        # Cross-domain primitives/helpers
+│       ├── constant/
+│       ├── exception/
+│       ├── response/
+│       ├── utils/
+│       └── validator/
+│
+├── templates/                         # Domain scaffolding templates
+├── .golangci.yml                      # golangci-lint configuration
+├── docker-compose.yml
+├── env.example
+├── go.mod
+├── Makefile
+└── README.md
 ```
 
 ## Architecture
 
-The application follows a clean architecture pattern:
+Business code lives under `internal/domain`, while framework concerns and external systems live under `internal/infra`.
 
+```text
+HTTP Request
+    │
+    ▼
+ Handler
+    │
+    ▼
+ Service
+    │
+    ▼
+Repository
+    │
+    ▼
+PostgreSQL
 ```
-┌─────────────────────────────────────────┐
-│         HTTP Handlers (API Layer)        │
-│  - Request validation                    │
-│  - Response formatting                   │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│      Services (Business Logic)          │
-│  - Business rules                       │
-│  - Transaction management               │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│    Repositories (Data Access)          │
-│  - Database operations                  │
-│  - Query optimization                   │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│         Database (PostgreSQL)           │
-└─────────────────────────────────────────┘
+
+External systems follow the same dependency direction:
+
+```text
+Domain interface / application need
+            │
+            ▼
+internal/infra/integration/<provider>
+            │
+            ▼
+      External service
 ```
+
+This keeps vendor-specific SDKs and implementation details outside the business domains.
+
+## External Integrations
+
+Placeholder adapters are included for:
+
+```text
+internal/infra/integration/
+├── stripe/
+├── s3/
+└── resend/
+```
+
+They intentionally do **not** install Stripe, AWS, or Resend SDKs. Each placeholder contains a small configuration/client shape and returns `ErrNotImplemented` until an application wires in the provider it actually needs.
+
+Typical usage when adapting the skeleton:
+
+1. Define the capability required by the domain, preferably as an interface.
+2. Implement that capability under `internal/infra/integration/<provider>`.
+3. Add the provider SDK only when the integration is needed.
+4. Register the concrete adapter through the Fx bootstrap modules.
+
+This makes it easier to replace providers later, for example Stripe with another payment gateway or S3 with another object-storage implementation.
 
 ## Prerequisites
 
 - Go 1.25.0 or higher
 - PostgreSQL 12 or higher
-- Make (optional, for using Makefile commands)
+- Make (optional but recommended)
+- Docker / Docker Compose (optional)
 
 ## Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd gin-skeleton
-   ```
+```bash
+git clone <repository-url>
+cd gin-skeleton
 
-2. **Install dependencies**
-   ```bash
-   go mod download
-   ```
+go mod download
+cp env.example .env
+```
 
-3. **Set up environment variables**
-   ```bash
-   cp env.example .env
-   # Edit .env with your configuration
-   ```
+Update `.env` with your local configuration, then run migrations:
 
-4. **Run database migrations**
-   ```bash
-   make migrate-up
-   ```
+```bash
+make migrate-up
+```
 
-5. **Start the application**
-   ```bash
-   go run ./cmd/api
-   ```
+Start the API:
 
-The API will be available at `http://localhost:8000`
+```bash
+go run ./cmd/api
+```
 
-## Scaffolding a new domain
+The default API address is:
 
-Generate repository, service, and Fx module wiring from top-level templates:
+```text
+http://localhost:8000
+```
+
+## Common Commands
+
+```bash
+make test            # Run all Go tests
+make test-cover      # Run tests and generate coverage.out
+
+make lint            # Run golangci-lint
+make lint-fix        # Run golangci-lint with automatic fixes
+make lint-install    # Install the pinned golangci-lint version
+
+make migrate-up      # Apply pending migrations
+make migrate-down    # Roll back the latest migration
+make migrate-status  # Show migration status
+make migrate-create NAME=add_products
+make migrate-baseline
+make migrate-fresh   # Drop public schema and re-run migrations
+
+make swagger         # Regenerate Swagger artifacts
+make scaffold name=book
+```
+
+Run `make help` to see the available Makefile commands.
+
+## Testing
+
+The skeleton includes router-level API tests in:
+
+```text
+internal/infra/router/web_test.go
+```
+
+The tests use Go's standard `testing` and `net/http/httptest` packages and exercise the real route/middleware/handler path while replacing service/database boundaries with test doubles.
+
+Covered example flows include:
+
+- health check
+- signup
+- login
+- refresh-token rotation
+- logout
+- protected endpoint rejection without a JWT
+- user list
+- user lookup
+- user update
+- user deletion
+
+Run the suite with:
+
+```bash
+make test
+```
+
+Generate coverage output with:
+
+```bash
+make test-cover
+```
+
+`coverage.out` is ignored by Git.
+
+## Linting
+
+The project uses `golangci-lint` and includes a repository-level `.golangci.yml`.
+
+Install the pinned version:
+
+```bash
+make lint-install
+```
+
+Run linting:
+
+```bash
+make lint
+```
+
+Apply supported automatic fixes:
+
+```bash
+make lint-fix
+```
+
+The skeleton intentionally does not include GitHub Actions, GitLab CI, CircleCI, or another CI provider. Consumers can wire these commands into whichever CI system they prefer.
+
+## Scaffolding a New Domain
+
+Generate repository, service, and Fx module boilerplate:
 
 ```bash
 make scaffold name=book
 ```
 
 This creates:
-- `internal/domain/book/repository/book_repository.go` (+ interface)
-- `internal/domain/book/service/book_service.go` (+ interface)
-- `internal/infra/bootstrap/modules/book_module.go`
 
-Notes:
-- The `name` argument is converted to lower-case for packages and PascalCase for types.
-- Templates live under `templates/` so scaffolding assets are not mixed into runtime packages.
-- You still need to add the model, handlers, requests, and DTOs under `internal/domain/<name>/` when needed.
+```text
+internal/domain/book/repository/book_repository.go
+internal/domain/book/repository/book_repository_interface.go
+internal/domain/book/service/book_service.go
+internal/domain/book/service/book_service_interface.go
+internal/infra/bootstrap/modules/book_module.go
+```
+
+You can then add the model, handler, request, and DTO files required by the domain.
 
 ## Configuration
 
-The application uses environment variables for configuration. Copy `env.example` to `.env` and configure:
+Copy `env.example` to `.env` and configure the application.
 
-### Database Configuration
+### Database
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -154,247 +296,200 @@ DB_NAME=your_database
 DB_SSL_MODE=disable
 ```
 
-### Server Configuration
+### Server
+
 ```env
 SERVER_PORT=8000
 SERVER_READ_TIMEOUT=10s
 SERVER_WRITE_TIMEOUT=10s
 ```
 
-### JWT Configuration
+### JWT
+
 ```env
 JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production
-JWT_ACCESS_EXPIRY=168h      # 7 days
-JWT_REFRESH_EXPIRY=720h     # 30 days
+JWT_ACCESS_EXPIRY=168h
+JWT_REFRESH_EXPIRY=720h
 ```
 
-## API Documentation
+## API Endpoints
 
-### Swagger UI
+### Utility / documentation
 
-Interactive API documentation is available at:
-```
-http://localhost:8000/swagger/index.html
-```
-
-The Swagger UI provides:
-- Complete API endpoint documentation
-- Request/response schemas
-- Try-it-out functionality
-- Authentication support (JWT Bearer tokens)
-
-### Generate Documentation
-
-```bash
-# Generate Swagger documentation
-make swagger
-
-# Or manually
-swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
+```text
+GET  /                         Skeleton status information
+GET  /ping                     Simple pong endpoint
+GET  /health                   Database-aware health check
+GET  /api/health               Database-aware API health check
+GET  /swagger/*any             Swagger UI (basic auth)
+GET  /docs/swagger.yaml        Swagger specification (basic auth)
 ```
 
-### API Endpoints
+### Authentication
 
-#### Public Endpoints
+```text
+POST /api/auth/signup          Create a user account
+POST /api/auth/login           Login and receive access/refresh tokens
+POST /api/auth/refresh         Rotate refresh token and issue new tokens
+POST /api/auth/logout          Logout; requires an access token
+```
 
-- `GET /ping` - Health check (simple)
-- `GET /health` - Health check with database connectivity
-- `GET /swagger/*any` - Swagger API documentation (basic auth)
-- `POST /api/auth/login` - User login
-- `POST /api/auth/refresh` - Refresh access token
-- `GET /api/users` - List users (paginated)
-- `GET /api/users/:id` - Get user by ID
+### Users
 
-#### Protected Endpoints (Require JWT)
+```text
+GET    /api/users              List users with pagination
+GET    /api/users/:id          Get a user by ID
+PUT    /api/users/:id          Update a user; requires JWT
+DELETE /api/users/:id          Delete a user; requires JWT
+```
 
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+## Authentication
+
+Login using:
+
+```text
+POST /api/auth/login
+```
+
+Send the access token on protected routes:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+Refresh tokens are rotated through:
+
+```text
+POST /api/auth/refresh
+```
 
 ## Database Migrations
 
-Migrations use [Goose](https://github.com/pressly/goose) with SQL files stored in `database/migrations`.
+Migrations use [Goose](https://github.com/pressly/goose) and are stored in `database/migrations`.
 
-The recommended workflow uses the embedded migration runner:
+Migration execution is intentionally separate from normal API startup.
 
-```bash
-make migrate-up
-```
+Create a migration:
 
-### Create a new migration
 ```bash
 make migrate-create NAME=create_products_table
 ```
 
-### Run migrations
+Apply migrations:
+
 ```bash
 make migrate-up
 ```
 
-### Rollback last migration
+Rollback the most recent migration:
+
 ```bash
 make migrate-down
 ```
 
-### Check migration status
+Check migration state:
+
 ```bash
 make migrate-status
 ```
 
-### Baseline an existing database
+## Swagger
+
+Regenerate Swagger artifacts with:
+
 ```bash
-make migrate-baseline
+make swagger
 ```
 
-### Fresh migration (drop all and rerun)
-```bash
-make migrate-fresh
+Then open:
+
+```text
+http://localhost:8000/swagger/index.html
 ```
 
 ## Middleware
 
-The application includes the following middleware (executed in order):
+The application includes middleware for:
 
-1. **CORS Middleware** - Handles Cross-Origin Resource Sharing
-2. **Request ID Middleware** - Generates unique request IDs for tracing
-3. **Logging Middleware** - Structured request/response logging
-4. **Sanitize Middleware** - XSS prevention through input sanitization
-5. **Case Converter Middleware** - Converts camelCase ↔ snake_case
-6. **Error Handler Middleware** - Centralized error handling
-7. **Rate Limiting** - Applied to authentication endpoints (10 req/min)
-8. **JWT Auth Middleware** - Validates JWT tokens for protected routes
+1. CORS
+2. Request IDs
+3. Structured request logging
+4. Input sanitization
+5. Request/response case conversion
+6. Centralized application error handling
+7. Authentication rate limiting
+8. JWT authorization
+9. Database transactions for write endpoints
 
-## Authentication
+## Responses and Error Handling
 
-The application uses JWT tokens for authentication:
+Successful API responses use a common envelope:
 
-1. **Login**: `POST /api/auth/login` with email and password
-   - Returns access token and refresh token
-   
-2. **Protected Routes**: Include token in Authorization header
-   ```
-   Authorization: Bearer <access_token>
-   ```
-
-3. **Refresh Token**: `POST /api/auth/refresh` with refresh token
-   - Returns new access token
-
-## Development
-
-### Running in Development Mode
-```bash
-go run ./cmd/api
-```
-
-### Building
-```bash
-go build -o bin/api ./cmd/api
-```
-
-### Running Tests
-```bash
-go test ./...
-```
-
-### Generate API Documentation
-```bash
-make swagger
-# Or
-swag init -g cmd/api/main.go -o ./docs --parseDependency --parseInternal
-```
-
-After generating, access the documentation at `http://localhost:8000/swagger/index.html`
-
-### Code Formatting
-```bash
-go fmt ./...
-```
-
-### Linting
-```bash
-golangci-lint run
-```
-
-## Docker
-
-### Build Docker Image
-```bash
-docker build -f docker/web.Dockerfile -t gin-skeleton .
-```
-
-### Run with Docker Compose
-```bash
-docker compose up
-```
-
-### Opt-in Docker migrations
-
-Docker startup does not run migrations by default. Apply migrations explicitly before starting the app, or opt in with the migration mode provided by the deployment configuration:
-
-```bash
-RUN_MIGRATIONS=true docker compose up
-```
-
-Keep automatic migrations disabled for normal application startup unless the environment is prepared for schema changes during container boot.
-
-## Logging
-
-Logs are written to the `logs/` directory:
-- `app.log` - General application logs
-- `errors.log` - Error logs only
-
-Logs are rotated daily and kept for 30 days. Logs are also rotated when they exceed 100MB.
-
-## Error Handling
-
-The application uses structured error handling:
-
-- **Validation Errors** (422): Invalid input data
-- **Not Found** (404): Resource not found
-- **Unauthorized** (401): Authentication required
-- **Forbidden** (403): Insufficient permissions
-- **Internal Error** (500): Server errors
-
-All errors follow a consistent format:
 ```json
 {
-  "success": false,
-  "message": "Error message",
-  "description": "Detailed description",
+  "success": true,
+  "message": "operation successful",
   "data": {}
 }
 ```
 
-## Security Features
+Validation errors use a Laravel-style field map:
 
-- **Password Hashing**: bcrypt with default cost
-- **JWT Tokens**: HS256 signing with configurable expiry
-- **Input Sanitization**: XSS prevention via bluemonday
-- **Rate Limiting**: Protection against brute force attacks
-- **CORS**: Configurable cross-origin resource sharing
-- **Request ID**: Distributed tracing support
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": ["The email field must be a valid email address."]
+  }
+}
+```
 
-## Best Practices
+Application errors are centralized through the exception middleware and mapped to the appropriate HTTP status code.
 
-1. **Always use context.Context** for cancellation and timeouts
-2. **Use transactions** for multi-step database operations
-3. **Validate all inputs** using the validator package
-4. **Handle errors properly** using the exception package
-5. **Use structured logging** with appropriate log levels
-6. **Follow the repository pattern** for data access
-7. **Keep business logic in services**, not handlers
+## Docker
+
+Build the image:
+
+```bash
+docker build -f docker/web.Dockerfile -t gin-skeleton .
+```
+
+Run with Docker Compose:
+
+```bash
+docker compose up
+```
+
+Docker startup does not run migrations by default. Run migrations separately, or opt in where appropriate for your deployment setup.
+
+## Logging
+
+Application logs are written under `logs/` and rotated automatically:
+
+```text
+logs/app.log
+logs/errors.log
+```
+
+The `logs/` directory and log files are ignored by Git.
+
+## Development Guidelines
+
+- Keep HTTP concerns in handlers.
+- Keep business rules in services.
+- Keep database access in repositories.
+- Keep third-party provider code under `internal/infra/integration`.
+- Prefer domain-owned interfaces when business logic needs an external capability.
+- Use `context.Context` for request-scoped work and cancellation.
+- Add tests for new endpoints and business behavior.
+- Run `make test` and `make lint` before publishing changes.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+1. Create a feature branch.
+2. Make the change.
+3. Add or update tests where appropriate.
+4. Run `make test` and `make lint`.
+5. Open a pull request.
 
-## License
-
-This project is open source and available under the MIT License.
-
-## Support
-
-For issues and questions, please open an issue on the repository.
+For questions or issues, use the repository's GitHub issue tracker.
