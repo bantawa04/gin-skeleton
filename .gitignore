@@ -4,3 +4,4 @@ logs/
 *.log
 api
 .DS_Store
+coverage.out

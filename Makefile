@@ -1,7 +1,7 @@
 # Makefile for Gin Skeleton Application
 -include .env
 
-.PHONY: help migrate-up migrate-down migrate-status migrate-create migrate-baseline migrate-fresh swagger scaffold lint lint-fix lint-install
+.PHONY: help migrate-up migrate-down migrate-status migrate-create migrate-baseline migrate-fresh swagger scaffold lint lint-fix lint-install test test-cover
 
 GOLANGCI_LINT_VERSION ?= v2.12.2
 
@@ -21,6 +21,13 @@ lint-fix: ## Run golangci-lint and apply available fixes
 lint-install: ## Install the pinned golangci-lint version
 	@curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
 	@echo "Installed golangci-lint $(GOLANGCI_LINT_VERSION). Ensure $$(go env GOPATH)/bin is on your PATH."
+
+test: ## Run all tests
+	@go test ./...
+
+test-cover: ## Run all tests and print coverage
+	@go test ./... -coverprofile=coverage.out
+	@go tool cover -func=coverage.out
 
 migrate-up: ## Apply all pending migrations
 	@$(_CLEAN); \
