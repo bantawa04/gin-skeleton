@@ -1,7 +1,9 @@
 # Makefile for Gin Skeleton Application
 -include .env
 
-.PHONY: help migrate-up migrate-down migrate-status migrate-create migrate-baseline migrate-fresh swagger scaffold
+.PHONY: help migrate-up migrate-down migrate-status migrate-create migrate-baseline migrate-fresh swagger scaffold lint lint-fix lint-install
+
+GOLANGCI_LINT_VERSION ?= v2.12.2
 
 _CLEAN = find database/migrations -name "._*" -delete 2>/dev/null; true
 _MIGRATE_ENV = DB_USER='$(DB_USER)' DB_PASSWORD='$(DB_PASSWORD)' DB_HOST='$(DB_HOST)' DB_PORT='$(DB_PORT)' DB_NAME='$(DB_NAME)' DB_SSL_MODE='$(DB_SSL_MODE)'
@@ -9,6 +11,16 @@ _MIGRATE_ENV = DB_USER='$(DB_USER)' DB_PASSWORD='$(DB_PASSWORD)' DB_HOST='$(DB_H
 help: ## Show available commands
 	@grep -Eh '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-22s\033[0m %s\n", $$1, $$2}'
+
+lint: ## Run golangci-lint
+	@golangci-lint run ./...
+
+lint-fix: ## Run golangci-lint and apply available fixes
+	@golangci-lint run --fix ./...
+
+lint-install: ## Install the pinned golangci-lint version
+	@curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
+	@echo "Installed golangci-lint $(GOLANGCI_LINT_VERSION). Ensure $$(go env GOPATH)/bin is on your PATH."
 
 migrate-up: ## Apply all pending migrations
 	@$(_CLEAN); \

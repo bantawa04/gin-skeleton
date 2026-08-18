@@ -3,3 +3,4 @@ tmp/
 logs/
 *.log
 api
+.DS_Store
